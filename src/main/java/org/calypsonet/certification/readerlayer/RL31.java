@@ -4,11 +4,20 @@ import org.calypsonet.certification.readerlayer.procedures.Console;
 import org.calypsonet.certification.readerlayer.procedures.ContactProtocol;
 import org.calypsonet.certification.readerlayer.procedures.ReaderType;
 import org.calypsonet.certification.readerlayer.procedures.RLProcedures;
+import org.calypsonet.certification.readerlayer.reader.IReaderModule;
+import org.calypsonet.certification.readerlayer.reader.PcscReaderModule;
+import org.calypsonet.certification.readerlayer.reader.StubReaderModule;
 
 public class RL31 {
 
   private static void Test() {
-    RLProcedures RLP = new RLProcedures();
+    /*
+     * Select plugin to certify
+     */
+    IReaderModule pluginModuleToCertify = new PcscReaderModule();
+//    IReaderModule pluginModuleToCertify = new StubReaderModule();
+
+    RLProcedures RLP = new RLProcedures(pluginModuleToCertify);
 
     try {
       // Display test infos

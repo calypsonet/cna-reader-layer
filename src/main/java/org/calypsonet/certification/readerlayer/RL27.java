@@ -1,11 +1,19 @@
 package org.calypsonet.certification.readerlayer;
 
 import org.calypsonet.certification.readerlayer.procedures.*;
+import org.calypsonet.certification.readerlayer.reader.IReaderModule;
+import org.calypsonet.certification.readerlayer.reader.PcscReaderModule;
 
 public class RL27 {
 
     private static void Test() {
-        RLProcedures RLP = new RLProcedures();
+        /*
+         * Select plugin to certify
+         */
+        IReaderModule pluginModuleToCertify = new PcscReaderModule();
+//	    IReaderModule pluginModuleToCertify = new StubReaderModule();
+
+        RLProcedures RLP = new RLProcedures(pluginModuleToCertify);
 
         try {
             // Display test infos
