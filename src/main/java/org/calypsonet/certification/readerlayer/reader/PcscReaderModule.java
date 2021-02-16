@@ -65,7 +65,7 @@ public class PcscReaderModule extends IReaderModule
 		{
 			// Get and configure a contactless reader
 			mReader = (PcscReader) plugin.getReader(readerName);
-			mReader.setContactless(true);
+			mReader.setContactless(false);
 			mReader.setIsoProtocol(PcscReader.IsoProtocol.T0);
 		}
 	}
@@ -97,14 +97,39 @@ public class PcscReaderModule extends IReaderModule
 	}
 
 	@Override
-	public Reader getReader()
-	{
-		return mReader;
+	public void deactivateProtocol(String cardProtocol) {
+		// Deactivate protocols
+		if ((ContactlessProtocol.NFC_A_ISO_14443_3A.equals(cardProtocol)) || (ContactlessProtocol.NFC_A_ISO_14443_3B.equals(cardProtocol)))
+		{
+			mReader.deactivateProtocol(PcscSupportedContactlessProtocols.ISO_14443_4.name());
+		}
+		else if (ContactProtocol.ISO_7816_3_T0.equals(cardProtocol))
+		{
+			mReader.deactivateProtocol(PcscSupportedContactProtocols.ISO_7816_3_T0.name());
+		}
+		else if (ContactProtocol.ISO_7816_3_T1.equals(cardProtocol))
+		{
+			mReader.deactivateProtocol(PcscSupportedContactProtocols.ISO_7816_3_T1.name());
+		}
+		else
+			{
+			throw new IllegalArgumentException("Protocol not supported by this PC/SC reader: " + cardProtocol);
+			}
 	}
+
+	@Override
+	public Reader getReader() 	{return mReader;}
 
 	@Override
 	public String getPluginName()
 	{
 		return plugin.getName();
 	}
+
+	@Override
+	public boolean checkcardpresence()
+	{
+		return mReader.isCardPresent();
+	}
+
 }

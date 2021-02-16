@@ -20,13 +20,31 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.eclipse.keyple.core.card.message.*;
+import org.eclipse.keyple.core.card.selection.*;
+import org.eclipse.keyple.core.service.Plugin;
+import org.eclipse.keyple.core.service.Reader;
+import org.eclipse.keyple.core.service.SmartCardService;
+import org.eclipse.keyple.core.util.Assert;
+import org.eclipse.keyple.core.util.ByteArrayUtil;
+import org.eclipse.keyple.plugin.pcsc.PcscPluginFactory;
+import org.eclipse.keyple.plugin.pcsc.PcscReader;
+import org.eclipse.keyple.plugin.pcsc.PcscSupportedContactProtocols;
+import org.eclipse.keyple.plugin.pcsc.PcscSupportedContactlessProtocols;
+
+import javax.swing.text.html.HTMLDocument;
 
 /**
  * Define the Reader Layer test procedures.<p>
  * All public procedures raise a {@link RuntimeException} in case of an error.
  */
 public class RLProcedures {
+  private static final String DEFAULT_CARD_READER_NAME =
+      "Identive CLOUD 2700 R Smart Card Reader 0";
+  private String readerName;
   private SmartCardService smartCardService;
+  private Plugin plugin;
+  private Reader reader;
   private CardSelectionsResult cardSelectionsResult;
   private CardSelectionsService cardSelectionsService;
   private CardResponse cardResponse;
@@ -61,27 +79,7 @@ public class RLProcedures {
 	  mReaderModule = readerModule;
   }
 
-  /**
-   * Helper method to check the reader type provided as a case insensitive String.
-   *
-   * @param readerType A not null String containing the reader type "contactless" or "contact"
-   * @return true is the type is contactless
-   * @throws IllegalArgumentException if the argument is wrong
-   */
-  private boolean isReaderTypeContactless(String readerType) {
-    boolean isContactless;
-    Assert.getInstance().notNull(readerType, "readerType");
-    if (readerType.equalsIgnoreCase("contactless")) {
-      isContactless = true;
-    } else if (readerType.equalsIgnoreCase("contact")) {
-      isContactless = false;
-    } else {
-      throw new IllegalArgumentException("Unknown reader type: " + readerType);
-    }
-    return isContactless;
-  }
-
-  /*
+ /*
   Description: Sets the reader name
   Note: overwrites the default value.
   */
@@ -89,6 +87,15 @@ public class RLProcedures {
     mReaderModule.setReaderName(readerName);
   }
 
+  /*
+  Description: Get the current reader name
+  */
+  public String RL_P_UT_GetReaderName ()
+  {
+    String ReaderName = "";
+     ReaderName = String.valueOf(mReaderModule.getReaderName());
+     return ReaderName;
+  }
   /*
   Description: Register the plugin
   Create:
@@ -120,7 +127,7 @@ public class RLProcedures {
 
     // Observer Reader
     if (observable) {
-      RL_P_UT_Observable();
+        //((ObservableReader) mReaderModule).vaddObserver(new ReaderObserver());
     }
   }
 
@@ -131,23 +138,104 @@ public class RLProcedures {
   Parameters:
   - ReaderProtocol: String ISO Protocol
   */
-  void RL_P_UT_ActivateProtocol(String cardProtocol) {
+  public void RL_P_UT_ActivateProtocol(String cardProtocol) {
 	  // Activate protocols
 	  mReaderModule.activateProtocol(cardProtocol);
   }
 
   /*
-  Description: Add an observer reader
+  Description: Deactivate a protocol
+  Use:
+  - Reader reader
+  Parameters:
+  - ReaderProtocol: String ISO Protocol
+  */
+ public void RL_P_UT_DeactivateProtocol(String cardProtocol) {
+    // Deactivate protocols
+     mReaderModule.deactivateProtocol(cardProtocol);
+ }
+
+  /*
+  Description: Polling Configuration
+  Use:
+  - Reader reader
+    Configuration:
+  - For observable readers
+
+  */
+ public void RL_P_UT_PollingConfiguration(String PollingMode)
+  {
+    //((ObservableReader) mReaderModule).startCardDetection(ObservableReader.PollingMode.valueOf(PollingMode));
+  }
+
+    /*
+  Description: Finalize the card processing
   Use:
   - Reader reader
   Configuration:
-  - Polling: REPEATING
+  - For observable readers
   */
-  void RL_P_UT_Observable() {
-    // Add an observer
-    //	((ObservableReader) reader).addObserver(new CardReaderObserver());
-    //	((ObservableReader) reader).startCardDetection(ObservableReader.PollingMode.REPEATING);
+  public void RL_P_UT_FinalizeCardProcessing()
+  {
+      //((ObservableReader) mReaderModule).finalizeCardProcessing();
   }
+
+  /*
+Description: Verify a card is present. Return true if a card is present, false otherwise.
+Use:
+- reader
+*/
+  public boolean RL_P_UT_CheckCardPresence()
+  {
+   return mReaderModule.checkcardpresence();
+  }
+
+
+    public void RL_P_UT_CheckCardDetected() {
+        System.out.println("Check card presence for the reader " + RL_P_UT_GetReaderName());
+        Assert.getInstance().isTrue(mReaderModule.checkcardpresence(), "The card is detected for the reader"+ RL_P_UT_GetReaderName());
+        System.out.println("Confirm that the card is detected for the reader " + RL_P_UT_GetReaderName());
+    }
+
+    public void RL_P_UT_CheckCardNotDetected() {
+        boolean ExpectedNotDetected = false;
+        System.out.println("Check card presence for the reader " + RL_P_UT_GetReaderName());
+        Pattern pattern = Pattern.compile(String.valueOf(ExpectedNotDetected));
+        Matcher expressionMatcher =
+                pattern.matcher(String.valueOf(mReaderModule.checkcardpresence()));
+        Assert.getInstance().isTrue(expressionMatcher.matches(), "The card is not detected for the reader " + RL_P_UT_GetReaderName());
+        System.out.println("Confirm that the card is not detected for the reader" + RL_P_UT_GetReaderName());
+    }
+
+  /*
+Description: Return the ATR of the card
+  Create:
+  - CardSelectionsService cardSelectionsService
+  - CardSelectionsResult cardSelectionsResult
+  Parameters:
+  - Return card ATR value
+*/
+  public String RL_P_UT_GetATR()
+   {
+     String ATR ="";
+     cardSelectionsService = new CardSelectionsService();
+
+     // Card selection case without AID to avoid a select of the application
+     GenericCardSelection cardSelection =
+             new GenericCardSelection(
+                     CardSelector.builder()
+                             .build());
+
+     // Add the selection case to the current selection
+     cardSelectionsService.prepareSelection(cardSelection);
+
+     // Actual card communication: operate through a single request the card selection
+     CardSelectionsResult cardSelectionsResult =
+             cardSelectionsService.processExplicitSelections(mReaderModule.getReader());
+     AbstractSmartCard smartCard = cardSelectionsResult.getActiveSmartCard();
+     ATR = ByteArrayUtil.toHex(smartCard.getAtrBytes());
+     return ATR;
+   }
 
   /*
   Description: Select a DF with an AID. The logical channel is open after the selection.
@@ -156,8 +244,9 @@ public class RLProcedures {
   - CardSelectionsResult cardSelectionsResult
   Parameters:
   - smartCardAID: String AID, AID to select
+  - Return FCI value
   */
-  public void RL_P_UT_SmartCardSelection(String smartCardAID)
+  public String RL_P_UT_SmartCardSelection(String smartCardAID)
   {
     // Prepare the card selection
     cardSelectionsService = new CardSelectionsService();
@@ -175,9 +264,50 @@ public class RLProcedures {
     // Actual card communication: operate through a single request the card selection
     CardSelectionsResult cardSelectionsResult =
             cardSelectionsService.processExplicitSelections(mReaderModule.getReader());
+      AbstractSmartCard smartCard = cardSelectionsResult.getActiveSmartCard();
+      String FCIResult = ByteArrayUtil.toHex(smartCard.getFciBytes());
+      return FCIResult;
   }
 
-  /*
+    /*
+  Description: Select a DF with an AID. The logical channel is open after the selection.
+  Create:
+  - CardSelectionsService cardSelectionsService
+  - CardSelectionsResult cardSelectionsResult
+  Parameters:
+  - smartCardAID: String AID, AID to select
+  - Return FCI value
+  */
+    public String RL_P_UT_SmartCardSelection_With_Occurence(String smartCardAID, String OccValue)
+    {
+        // Prepare the card selection
+        cardSelectionsService = new CardSelectionsService();
+
+        // first selection case targeting cards with AID1
+        GenericCardSelection cardSelection =
+                new GenericCardSelection(
+                        CardSelector.builder()
+                                .aidSelector(
+                                        CardSelector.AidSelector.builder()
+                                                .aidToSelect(smartCardAID)
+                                                .fileOccurrence(CardSelector.AidSelector.FileOccurrence.valueOf(OccValue))
+                                                .build())
+                                .build());
+
+        // Add the selection case to the current selection
+        cardSelectionsService.prepareSelection(cardSelection);
+
+        // Actual card communication: operate through a single request the card selection
+        CardSelectionsResult cardSelectionsResult =
+                cardSelectionsService.processExplicitSelections(mReaderModule.getReader());
+        AbstractSmartCard smartCard = cardSelectionsResult.getActiveSmartCard();
+
+        String FCIResult = ByteArrayUtil.toHex(smartCard.getFciBytes());
+        return FCIResult;
+    }
+
+
+    /*
   Description: Sends an APDU with specified the case4 flag
   Create:
   - CardResponse cardResponse

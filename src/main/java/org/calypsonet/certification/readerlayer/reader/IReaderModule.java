@@ -18,6 +18,8 @@ public abstract class IReaderModule
 	public abstract void initPlugin();
 	public abstract void configureReader(String readerType);
 	public abstract void activateProtocol(String cardProtocol);
+	public abstract void deactivateProtocol(String cardProtocol);
+	public abstract boolean checkcardpresence();
 	public abstract Reader getReader();
 	public abstract String getReaderName();
 	public abstract void setReaderName(String readerName);
