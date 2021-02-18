@@ -4,12 +4,13 @@ import org.calypsonet.certification.readerlayer.procedures.*;
 import org.calypsonet.certification.readerlayer.reader.IReaderModule;
 import org.calypsonet.certification.readerlayer.reader.PcscReaderModule;
 
-public class RL27 {
+public class RL18 {
 
     private static void Test() {
-        String Reader_For_Test = "OMNIKEY CardMan 5x21-CL 0";
-        String AID_For_Test =  "315449432E494341";
-        String FCIValue ="";
+        String AID_For_Test = "315449432E494341";
+        String Reader_For_Test = "OMNIKEY AG Smart Card Reader USB 0";
+        String FCIValue = "";
+        String CardATR = "";
         String ErrorMessage = "";
         Boolean CardAvailable = false;
 
@@ -24,7 +25,7 @@ public class RL27 {
         try {
             // Display test infos
             Console.displayTestName();
-            Console.display("Ensure that the success Status Word is not analysed by the Reader Layer.");
+            Console.display("Ensure that the Reader Layer supports protocol T=0 to communicate with a PO.");
 
             /////////////////////////////////////////////
             Console.display("PRE CONDITIONS");
@@ -34,9 +35,10 @@ public class RL27 {
             RLP.RL_P_UT_SetReaderName(Reader_For_Test);
             RLP.RL_P_UT_Initialization();
 
-            Console.display("Initialize reader as contactless non observable, ISO_14443_3B");
-            RLP.RL_P_UT_ReaderConfiguration(ReaderType.CONTACTLESS, ContactlessProtocol.NFC_A_ISO_14443_3B, false);
+            Console.display("Initialize reader as contact non observable, ISO_7816_3_T0");
+            RLP.RL_P_UT_ReaderConfiguration(ReaderType.CONTACT, ContactProtocol.ISO_7816_3_T0, false);
 
+            Console.display("Insert a PO, T=0 only, into the contact reader");
             // Wait until the user is ready.
             Console.waitEnter("Press enter when ready...");
 
@@ -46,40 +48,11 @@ public class RL27 {
 
             CardAvailable = RLP.RL_P_UT_CheckCardPresence();
             if (CardAvailable) {
-                Console.display("Card is detected in the reader: " + RLP.RL_P_UT_GetReaderName());
-
-                Console.display("Process a card selection using the AID for the test");
-                RLP.RL_P_UT_SmartCardSelection(AID_For_Test);
                 FCIValue = RLP.RL_P_UT_SmartCardSelection(AID_For_Test);
                 Console.display("FCI = " + FCIValue);
-
-                Console.display("Send a Read Records command to the reader with parameters indicated an available"
-                        + "record - Environment file SFI 07 record 1 from the reference profile");
-                Console.display("CLA: 00");
-                Console.display("INS: B2");
-                Console.display("P1: 01");
-                Console.display("P2: 3C (SFI*8+4)");
-                Console.display("Le: 1D");
-                RLP.RL_P_UT_SendAPDU("00 B2 01 3C 1D", false);
-
-                Console.display("Check the APDU response: data out size = 29 bytes and SW1-SW2 = 9000");
-                RLP.RL_P_UT_CheckDataOutLen(29, "9000");
-
-                Console.display("Send an Open Secure Session command in compatibility mode");
-                Console.display("CLA: 00");
-                Console.display("INS: 8A");
-                Console.display("P1: 81");
-                Console.display("P2: 00");
-                Console.display("Lc: 04");
-                Console.display("Data In Fields: 01020304");
-                Console.display("Le: 05");
-                RLP.RL_P_UT_SendAPDU("00 8A 81 00 04 01020304 05", true);
-
-                Console.display("Check the APDU response: data out size = 5 bytes and SW1-SW2 = 90000");
-                RLP.RL_P_UT_CheckDataOutLen(5, "9000");
             }
             else
-                ErrorMessage = "Card not found for the reader "+ RLP.RL_P_UT_GetReaderName();
+                ErrorMessage = "Failed to detect the PO into the reader " + RLP.RL_P_UT_GetReaderName();
 
             /////////////////////////////////////////////
             Console.display("POST CONDITIONS");

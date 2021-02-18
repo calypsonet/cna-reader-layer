@@ -1,15 +1,18 @@
 package org.calypsonet.certification.readerlayer;
 
-import org.calypsonet.certification.readerlayer.procedures.*;
+import org.calypsonet.certification.readerlayer.procedures.Console;
+import org.calypsonet.certification.readerlayer.procedures.ContactlessProtocol;
+import org.calypsonet.certification.readerlayer.procedures.RLProcedures;
+import org.calypsonet.certification.readerlayer.procedures.ReaderType;
 import org.calypsonet.certification.readerlayer.reader.IReaderModule;
 import org.calypsonet.certification.readerlayer.reader.PcscReaderModule;
 
-public class RL27 {
+public class RL39 {
 
     private static void Test() {
         String Reader_For_Test = "OMNIKEY CardMan 5x21-CL 0";
         String AID_For_Test =  "315449432E494341";
-        String FCIValue ="";
+        String FCIValue = "";
         String ErrorMessage = "";
         Boolean CardAvailable = false;
 
@@ -24,7 +27,7 @@ public class RL27 {
         try {
             // Display test infos
             Console.displayTestName();
-            Console.display("Ensure that the success Status Word is not analysed by the Reader Layer.");
+            Console.display("Ensure that the Reader Layer send P2=00h & Lc between 05h and 10h for Select command");
 
             /////////////////////////////////////////////
             Console.display("PRE CONDITIONS");
@@ -46,40 +49,16 @@ public class RL27 {
 
             CardAvailable = RLP.RL_P_UT_CheckCardPresence();
             if (CardAvailable) {
-                Console.display("Card is detected in the reader: " + RLP.RL_P_UT_GetReaderName());
+                Console.display("Card is detected for the reader: " + RLP.RL_P_UT_GetReaderName());
 
-                Console.display("Process a card selection using the AID for the test");
-                RLP.RL_P_UT_SmartCardSelection(AID_For_Test);
-                FCIValue = RLP.RL_P_UT_SmartCardSelection(AID_For_Test);
+                Console.display("Process a card selection using AID with length between 05h to 10h"
+                        + "and P2 = 00h (First Occurence) ");
+                Console.display("AID: " + AID_For_Test);
+                FCIValue = RLP.RL_P_UT_SmartCardSelection_With_Occurence(AID_For_Test, "FIRST");
                 Console.display("FCI = " + FCIValue);
-
-                Console.display("Send a Read Records command to the reader with parameters indicated an available"
-                        + "record - Environment file SFI 07 record 1 from the reference profile");
-                Console.display("CLA: 00");
-                Console.display("INS: B2");
-                Console.display("P1: 01");
-                Console.display("P2: 3C (SFI*8+4)");
-                Console.display("Le: 1D");
-                RLP.RL_P_UT_SendAPDU("00 B2 01 3C 1D", false);
-
-                Console.display("Check the APDU response: data out size = 29 bytes and SW1-SW2 = 9000");
-                RLP.RL_P_UT_CheckDataOutLen(29, "9000");
-
-                Console.display("Send an Open Secure Session command in compatibility mode");
-                Console.display("CLA: 00");
-                Console.display("INS: 8A");
-                Console.display("P1: 81");
-                Console.display("P2: 00");
-                Console.display("Lc: 04");
-                Console.display("Data In Fields: 01020304");
-                Console.display("Le: 05");
-                RLP.RL_P_UT_SendAPDU("00 8A 81 00 04 01020304 05", true);
-
-                Console.display("Check the APDU response: data out size = 5 bytes and SW1-SW2 = 90000");
-                RLP.RL_P_UT_CheckDataOutLen(5, "9000");
             }
             else
-                ErrorMessage = "Card not found for the reader "+ RLP.RL_P_UT_GetReaderName();
+                ErrorMessage = "Card not detected for the reader "+ RLP.RL_P_UT_GetReaderName();
 
             /////////////////////////////////////////////
             Console.display("POST CONDITIONS");
@@ -91,7 +70,7 @@ public class RL27 {
             if (ErrorMessage != "")
                 Console.notifyFailure(ErrorMessage);
             else
-                Console.notifySuccess();
+                Console.notifySuccess();;
 
         } catch (Exception ex) {
 

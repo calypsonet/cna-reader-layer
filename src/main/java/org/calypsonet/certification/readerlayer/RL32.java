@@ -2,13 +2,12 @@ package org.calypsonet.certification.readerlayer;
 
 import org.calypsonet.certification.readerlayer.procedures.Console;
 import org.calypsonet.certification.readerlayer.procedures.ContactProtocol;
-import org.calypsonet.certification.readerlayer.procedures.ReaderType;
 import org.calypsonet.certification.readerlayer.procedures.RLProcedures;
+import org.calypsonet.certification.readerlayer.procedures.ReaderType;
 import org.calypsonet.certification.readerlayer.reader.IReaderModule;
 import org.calypsonet.certification.readerlayer.reader.PcscReaderModule;
-import org.calypsonet.certification.readerlayer.reader.StubReaderModule;
 
-public class RL31 {
+public class RL32 {
 
   private static void Test() {
     String Reader_For_Test = "Broadcom Corp Contacted SmartCard 0";
@@ -20,21 +19,23 @@ public class RL31 {
      * Select plugin to certify
      */
     IReaderModule pluginModuleToCertify = new PcscReaderModule();
-//    IReaderModule pluginModuleToCertify = new StubReaderModule();
+//	    IReaderModule pluginModuleToCertify = new StubReaderModule();
 
     RLProcedures RLP = new RLProcedures(pluginModuleToCertify);
 
     try {
       // Display test infos
       Console.displayTestName();
+
       Console.display("Ensure that the Reader Layer manage correctly the SW1SW2=6CXXh"
-              + " status word when it receive a correct SW1SW2=6CXXh status word.");
+              + " status word when it receive a correct SW1SW2=6CXXh status word");
+      Console.display("The Reader Layer receives the status word 0x6CXX in response"
+              + " to a Case 2 command. The Reader Layer repeats the command with Le = XXh.");
 
       /////////////////////////////////////////////
       Console.display("PRE CONDITIONS");
       /////////////////////////////////////////////
-
-      Console.display("Initialize smart card service / register the Plugin / SAM Reader");
+      Console.display("Initialize smart card service / register the Plugin / SAM contact reader");
       RLP.RL_P_UT_SetReaderName(Reader_For_Test);
       RLP.RL_P_UT_Initialization();
 
@@ -53,18 +54,16 @@ public class RL31 {
         CardATR = RLP.RL_P_UT_GetATR();
         Console.display("Card ATR = " + CardATR);
 
-        Console.display("Send SAM Read Key parameters APDU command Case 4 to the SAM reade");
+        Console.display("Send SAM Read parameters APDU command Case 2 to the SAM reader");
         Console.display("CLA: 80");
-        Console.display("INS: BC");
+        Console.display("INS: BE");
         Console.display("P1: 00");
-        Console.display("P2: F0");
-        Console.display("Lc: 02");
-        Console.display("Data In Fields: 2179");
-        Console.display("Le: 10");
-        RLP.RL_P_UT_SendAPDU("80 BC 00 F0 02 2179 10", true);
+        Console.display("P2: A0");
+        Console.display("Le: 00");
+        RLP.RL_P_UT_SendAPDU("80 BE 00 A0 00", false);
 
-        Console.display("Check the APDU response: expect 32 bytes and SW1-SW2 = 9000");
-        RLP.RL_P_UT_CheckDataOutLen(32, "9000");
+        Console.display("Check the APDU response: expect 48 bytes and SW1-SW2 = 9000");
+        RLP.RL_P_UT_CheckDataOutLen(48, "9000");
       }
       else
         ErrorMessage = "The card is not detected for the reader " +  RLP.RL_P_UT_GetReaderName();
